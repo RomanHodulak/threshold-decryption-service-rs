@@ -6,3 +6,6 @@ edition = "2021"
 [dependencies]
 shamir = "2"
 anyhow = "1"
+clap = { version = "4.5", features = ["derive"] }
+clio = { version = "0.3", features = ["clap-parse"] }
+itertools = "0.13.0"
