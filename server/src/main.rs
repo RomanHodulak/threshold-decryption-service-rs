@@ -1,3 +1,4 @@
+mod decrypt;
 mod public_key;
 
 use crate::public_key::PublicKey;
@@ -25,13 +26,24 @@ async fn main() -> std::io::Result<()> {
 
     env_logger::init();
     let public_key = PublicKey::new(args.public_key.to_path_buf());
+    let threshold = args.threshold;
+    let public_key = Data::new(public_key);
+    let threshold = Data::new(decrypt::Threshold::new(threshold));
+    let encrypted_message = Data::new(decrypt::EncryptedMessage::empty());
+    let shares = Data::new(decrypt::Shares::new());
 
     HttpServer::new(move || {
         let logger = Logger::new("%a %{User-Agent}i");
 
         App::new()
             .service(public_key::public_key)
-            .app_data(Data::new(public_key.clone()))
+            .service(decrypt::start_decryption)
+            .service(decrypt::add_private_key_share)
+            .service(decrypt::finish_decryption)
+            .app_data(public_key.clone())
+            .app_data(threshold.clone())
+            .app_data(encrypted_message.clone())
+            .app_data(shares.clone())
             .wrap(logger)
     })
     .bind(("127.0.0.1", 8080))?

@@ -11,3 +11,6 @@ clap = { version = "4.5", features = ["derive"] }
 clio = { version = "0.3", features = ["clap-parse"] }
 env_logger = "0.11"
 log = "0.4"
+shamir = "2"
+rsa = "0.10.0-pre.1"
+thiserror = "1"
