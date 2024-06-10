@@ -1,5 +1,5 @@
-mod decrypt;
 mod public_key;
+mod scheme;
 
 use crate::public_key::PublicKey;
 use actix_web::middleware::Logger;
@@ -28,18 +28,17 @@ async fn main() -> std::io::Result<()> {
     let public_key = PublicKey::new(args.public_key.to_path_buf());
     let threshold = args.threshold;
     let public_key = Data::new(public_key);
-    let threshold = Data::new(decrypt::Threshold::new(threshold));
-    let encrypted_message = Data::new(decrypt::EncryptedMessage::empty());
-    let shares = Data::new(decrypt::Shares::new());
+    let threshold = Data::new(scheme::Threshold::new(threshold));
+    let encrypted_message = Data::new(scheme::EncryptedMessage::empty());
+    let shares = Data::new(scheme::Shares::new());
 
     HttpServer::new(move || {
         let logger = Logger::new("%a %{User-Agent}i");
 
         App::new()
             .service(public_key::public_key)
-            .service(decrypt::start_decryption)
-            .service(decrypt::add_private_key_share)
-            .service(decrypt::finish_decryption)
+            .service(scheme::decrypt)
+            .service(scheme::send_message)
             .app_data(public_key.clone())
             .app_data(threshold.clone())
             .app_data(encrypted_message.clone())

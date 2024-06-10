@@ -12,6 +12,7 @@ This repository implements (t, n)-threshold encryption scheme as a service.
 ## Known limitations
 
 * Only one private-public key pair is supported.
+* Only RSA private keys are supported for decryption.
 
 ## Requirements
 
@@ -22,6 +23,16 @@ Before using the libraries in this repository, make sure you have installed:
 * openssl 3.2.1
 
 ## Usage
+
+### Generate private-public key pair
+
+To obtain a new private-public keypair you can run:
+
+```bash
+ssh-keygen -P "" -t rsa -b 2048 -m pkcs8 -f key && ssh-keygen -f key.pub -m pkcs8 -e > public_key.pem
+```
+
+Note that PKCS 8 format is used, which is important for the server-side decryption using the private key.
 
 ### Generate shares of the private key
 
@@ -43,45 +54,48 @@ cargo run -p server -- -p public_key.pem -t 3
 
 ### Retrieve the public key from the server
 
-To get the public key while the server is running locally, use:
+To get the public key while the server is running, use:
 
 ```bash
-curl http://localhost:8080/public_key
+curl http://localhost:8080/public_key 2>/dev/null > public_key.pem
 ```
+
+This will store it as `public_key.pem`
 
 ### Encrypt a message
 
+To encrypt a message, use the previously obtained public key and encrypt a plain-text with it. For example, like so:
+
 ```bash
-echo my-message | openssl rsautl -encrypt -pubin -inkey public_key.pem > cipher.txt
+echo my-message | openssl rsautl -encrypt -pubin -inkey public_key.pem > cipher.bin
 ```
+
+This will generate encrypted text file called `cipher.bin`
 
 ### Send encrypted message
 
-This will store the encrypted message. Previously added encrypted message and shares will be cleared.
+This will store the encrypted message from a text file called `cipher.bin`. Previously added encrypted message and
+shares will be cleared.
 
 ```bash
-curl -X POST http://localhost:8080/decrypt/start --data-binary "@cipher.txt"
-```
-
-### Send private key share
-
-This will add a share to the set of private key shares. Call this only with different unique shares.
-
-```bash
-curl -X POST http://localhost:8080/decrypt/add --data-binary "@share1"
+curl -X POST http://localhost:8080/send-message --data-binary "@cipher.bin"
 ```
 
 ### Decrypt a message
 
-After `threshold` amount of different private key shares have been submitted, the message can be decrypted.
+This will add a share to the set of private key shares.
+
+After `threshold` amount of different private key shares have been submitted, the message will be decrypted.
+
+It can be called repeatedly with the same share but never without any share.
 
 ```bash
-curl -X POST http://localhost:8080/decrypt/read
+curl -X POST http://localhost:8080/decrypt --data-binary "@share1"
 ```
 
 ### Full example
 
-Server-side:
+#### Server-side
 
 ```bash
 # Generate private-public key pairs
@@ -94,20 +108,21 @@ cargo run -p generate_keys -- -k $PWD/key -o $PWD/share
 cargo run -p server -- -p public_key.pem -t 3
 ```
 
-Client-side:
+#### Client-side
 
 ```bash
 # Encrypt a message
-echo hello world | openssl rsautl -encrypt -pubin -inkey <(curl http://localhost:8080/public_key 2>/dev/null) > cipher.txt
+echo hello world | openssl rsautl -encrypt -pubin -inkey <(curl http://localhost:8080/public_key 2>/dev/null) > cipher.bin
 
-# Send message for decryption
-curl -X POST http://localhost:8080/decrypt/start --data-binary "@cipher.txt"
-
-# Send shares
-curl -X POST http://localhost:8080/decrypt/add --data-binary "@share1.pem"
-curl -X POST http://localhost:8080/decrypt/add --data-binary "@share2.pem"
-curl -X POST http://localhost:8080/decrypt/add --data-binary "@share3.pem"
+# Send an encrypted message
+curl -X POST http://localhost:8080/send-message --data-binary "@cipher.bin"
 
 # Decrypt the message
-curl -X POST http://localhost:8080/decrypt/read
+curl -X POST http://localhost:8080/decrypt --data-binary "@share1.pem"
+curl -X POST http://localhost:8080/decrypt --data-binary "@share2.pem"
+curl -X POST http://localhost:8080/decrypt --data-binary "@share3.pem"
 ```
+
+## Implementation report
+
+If you're interested in reasoning behind the design choices made, see [Report.md](./Report.md).

@@ -3,6 +3,7 @@ use actix_web::{post, HttpResponse, Responder, ResponseError};
 use anyhow::Error;
 use rsa::pkcs8::DecodePrivateKey;
 use rsa::{Pkcs1v15Encrypt, RsaPrivateKey};
+use std::collections::HashSet;
 use std::sync::{Arc, RwLock};
 use thiserror::Error;
 
@@ -28,15 +29,15 @@ impl EncryptedMessage {
 }
 
 #[derive(Clone, Debug)]
-pub struct Shares(Arc<RwLock<Vec<Bytes>>>);
+pub struct Shares(Arc<RwLock<HashSet<Bytes>>>);
 
 impl Shares {
     pub fn new() -> Self {
-        Self(Arc::new(RwLock::new(Vec::new())))
+        Self(Arc::new(RwLock::new(HashSet::new())))
     }
 
     pub fn add(&self, content: Bytes) {
-        self.0.write().unwrap().push(content);
+        self.0.write().unwrap().insert(content);
     }
 
     pub fn clear(&self) {
@@ -66,8 +67,8 @@ impl Threshold {
     }
 }
 
-#[post("/decrypt/start")]
-async fn start_decryption(
+#[post("/send-message")]
+async fn send_message(
     encrypted: Bytes,
     message: Data<EncryptedMessage>,
     shares: Data<Shares>,
@@ -76,13 +77,6 @@ async fn start_decryption(
     shares.clear();
 
     HttpResponse::NoContent()
-}
-
-#[post("/decrypt/add")]
-async fn add_private_key_share(key: Bytes, shares: Data<Shares>) -> impl Responder {
-    shares.add(key);
-
-    HttpResponse::Ok().body(format!("{}", shares.count()))
 }
 
 #[derive(Debug, Error)]
@@ -97,12 +91,19 @@ impl From<anyhow::Error> for DecryptionError {
 
 impl ResponseError for DecryptionError {}
 
-#[post("/decrypt/read")]
-async fn finish_decryption(
+#[post("/decrypt")]
+async fn decrypt(
+    share: Bytes,
     threshold: Data<Threshold>,
     message: Data<EncryptedMessage>,
     shares: Data<Shares>,
 ) -> impl Responder {
+    shares.add(share);
+
+    if shares.count() < threshold.0 as usize {
+        return Ok(HttpResponse::NoContent().body(Vec::new()));
+    }
+
     match shamir::SecretData::recover_secret(threshold.0, shares.collect()) {
         Some(private_key) => {
             let private_key = RsaPrivateKey::from_pkcs8_pem(&private_key)

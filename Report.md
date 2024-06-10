@@ -3,7 +3,8 @@
 I started with creating the repository of two binary crates. One binary crate will serve the purpose of creating `n`
 shares with threshold `t` for the (`t`, `n`)-threshold scheme.
 
-To implement the (`t`, `n`)-threshold scheme, I used the Shamir implementation because it is the fastest. I've used
+To implement the (`t`, `n`)-threshold scheme, I used the Shamir implementation because it is one of the fastest and any
+individual share does not reveal any information about the secret. I've used
 the `shamir` crate. This crate is very minimalistic and provides a pure rust implementation of the Shamir's Secret
 Separation algorithm. I considered some alternatives, because this one does not seem to be very popular and has not been
 maintained for a couple of years, but compared to others, this one seemed good enough. Perhaps it is because it is so
@@ -30,3 +31,12 @@ First, I implemented the route for retrieving the public key. To open the file a
 the `NamedFile` interface from the `actix-files` crate. The reason is that the `actix-files` crate specializes in
 hosting static files on the `actix-web` server, so it is safe to assume that it will be the most optimal implementation
 for our purposes.
+
+Lastly I was tasked with implementing the decryption scheme. I came up with a simple and performant design where server
+receives and combines the key shares from all
+the participants, decrypts the encrypted message and returns it as plaintext after the threshold of shares is received
+for the message.
+
+This concludes the implementation report. I'm happy with the outcome as it is simple, functional and efficient while
+being certificate-less. Furthermore, I would like to add an abstraction for the encryption and decryption logic and the
+secret sharing algorithm to allow for swapping those.
