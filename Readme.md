@@ -78,3 +78,36 @@ After `threshold` amount of different private key shares have been submitted, th
 ```bash
 curl -X POST http://localhost:8080/decrypt/read
 ```
+
+### Full example
+
+Server-side:
+
+```bash
+# Generate private-public key pairs
+ssh-keygen -P "" -t rsa -b 2048 -m pkcs8 -f key && ssh-keygen -f key.pub -m pkcs8 -e > public_key.pem
+
+# Generate shares of private key
+cargo run -p generate_keys -- -k $PWD/key -o $PWD/share
+
+# Run server
+cargo run -p server -- -p public_key.pem -t 3
+```
+
+Client-side:
+
+```bash
+# Encrypt a message
+echo hello world | openssl rsautl -encrypt -pubin -inkey <(curl http://localhost:8080/public_key 2>/dev/null) > cipher.txt
+
+# Send message for decryption
+curl -X POST http://localhost:8080/decrypt/start --data-binary "@cipher.txt"
+
+# Send shares
+curl -X POST http://localhost:8080/decrypt/add --data-binary "@share1.pem"
+curl -X POST http://localhost:8080/decrypt/add --data-binary "@share2.pem"
+curl -X POST http://localhost:8080/decrypt/add --data-binary "@share3.pem"
+
+# Decrypt the message
+curl -X POST http://localhost:8080/decrypt/read
+```
