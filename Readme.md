@@ -39,10 +39,10 @@ Note that PKCS 8 format is used, which is important for the server-side decrypti
 To generate shares of a secret of 5 shares with the threshold of 3, run:
 
 ```bash
-cargo run -p generate_keys -- -k $PWD/private_key.pem -o $PWD/share_ -t 3 -s 5
+cargo run -p generate_keys -- -k $PWD/private_key.pem -o $PWD/share -t 3 -s 5
 ```
 
-This will split `private_key.pem` in your current working directory to `share_{1,5}.pem`.
+This will split `private_key.pem` in your current working directory to `share{1,5}`.
 
 ### Run the server
 
@@ -118,9 +118,9 @@ echo hello world | openssl rsautl -encrypt -pubin -inkey <(curl http://localhost
 curl -X POST http://localhost:8080/send-message --data-binary "@cipher.bin"
 
 # Decrypt the message
-curl -X POST http://localhost:8080/decrypt --data-binary "@share1.pem"
-curl -X POST http://localhost:8080/decrypt --data-binary "@share2.pem"
-curl -X POST http://localhost:8080/decrypt --data-binary "@share3.pem"
+curl -X POST http://localhost:8080/decrypt --data-binary "@share1"
+curl -X POST http://localhost:8080/decrypt --data-binary "@share2"
+curl -X POST http://localhost:8080/decrypt --data-binary "@share3"
 ```
 
 ## Implementation report

@@ -24,9 +24,9 @@ struct Args {
 
     /// The prefix of the file path for the shares to generate into.
     ///
-    /// For example, with the provided value being "share_", the generated file names would become
-    /// "share_1.pem", "share_2.pem", ...
-    #[clap(long, short, value_parser = clap::value_parser!(ClioPath), default_value = "share_")]
+    /// For example, with the provided value being "share", the generated file names would become
+    /// "share1", "share2", ...
+    #[clap(long, short, value_parser = clap::value_parser!(ClioPath), default_value = "share")]
     output: ClioPath,
 }
 
@@ -35,10 +35,9 @@ fn main() -> Result<(), anyhow::Error> {
     let private_key = args.key.open()?;
 
     let (shares, mut errors): (Vec<_>, Vec<_>) = (1..=args.shares)
-        .into_iter()
         .map(|i| {
             let file_name = format!(
-                "{}{i}.pem",
+                "{}{i}",
                 args.output
                     .file_name()
                     .unwrap_or_default()

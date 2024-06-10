@@ -39,4 +39,5 @@ for the message.
 
 This concludes the implementation report. I'm happy with the outcome as it is simple, functional and efficient while
 being certificate-less. Furthermore, I would like to add an abstraction for the encryption and decryption logic and the
-secret sharing algorithm to allow for swapping those.
+secret sharing algorithm to allow for swapping those and following that make more typed and user-friendly error
+messages.

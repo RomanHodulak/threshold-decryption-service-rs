@@ -122,6 +122,6 @@ async fn decrypt(
                 },
             )
         }
-        None => HttpResponse::BadRequest().await.into(),
+        None => HttpResponse::BadRequest().await,
     }
 }
