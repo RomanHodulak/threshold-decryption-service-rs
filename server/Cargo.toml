@@ -4,3 +4,10 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+anyhow = "1"
+actix-web = "4"
+actix-files = "0.6"
+clap = { version = "4.5", features = ["derive"] }
+clio = { version = "0.3", features = ["clap-parse"] }
+env_logger = "0.11"
+log = "0.4"
